@@ -32,7 +32,7 @@ jobs:
             cd ${{ secrets.DEPLOY_PATH }}
             # 如果目录是空的，先克隆仓库；否则拉取最新代码
             if [ ! -d ".git" ]; then
-              git clone git@github.com:xiaojia2017/php-mvp-project.git .
+              git clone https://github.com/xiaojia2017/php-mvp-project.git .
             else
               git pull origin main
             fi
