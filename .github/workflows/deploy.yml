@@ -15,21 +15,27 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-      - name: 部署到服务器
+      - name: 部署到服务器（最小权限账户）
         run: |
-          # 关键修改：添加 -p 2222 指定自定义 SSH 端口（替换成你的实际端口）
-          ssh -T -p 45319 -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
-            # 提前配置 git 加速，避免国内克隆超时
+          ssh -T -vvv -p 45319 -o ConnectTimeout=10 -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
+            # 配置 git 加速
             #git config --global http.timeout 300
             #git config --global https.proxy https://ghproxy.com:443
             
+            # 进入部署目录（deploy 有读写权限）
+            mkdir -p ${{ secrets.DEPLOY_PATH }}
             cd ${{ secrets.DEPLOY_PATH }}
+            
+            # 安全拉取代码（最小权限）
             if [ ! -d ".git" ]; then
-              # 国内镜像站加速克隆
-              git clone https://github.com/xiaojia2017/php-mvp-project.git .
+              rm -rf * .[!.]* 2>/dev/null || true
+              git clone --depth 1 https://github.com/xiaojia2017/php-mvp-project.git .
             else
-              git pull https://github.com/xiaojia2017/php-mvp-project.git main
+              git reset --hard HEAD
+              git clean -fd
+              git pull --force https://github.com/xiaojia2017/php-mvp-project.git main
             fi
-            # 可选：重启 PHP-FPM（根据你的版本调整）
-            # sudo systemctl restart php8.2-fpm
+            
+            # （可选）若需重启 PHP-FPM，用 sudo 提权（已配置免密）
+            # sudo systemctl restart php8.2-fpm.service
           EOF
