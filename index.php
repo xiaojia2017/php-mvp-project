@@ -1,2 +1,2 @@
 <?php
-echo phpinfo();  
+echo "终于成功了";  
